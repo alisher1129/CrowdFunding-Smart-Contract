@@ -12,7 +12,7 @@ contract CrowdFunding {
 
     struct Request {
         string description;
-        address payable recipient;                          
+        address payable recipient;                           
         uint256 value;
         bool completed;
         uint256 noOfVoters;
@@ -26,6 +26,11 @@ contract CrowdFunding {
         deadline = block.timestamp + _deadline;
         minimumContribution = 100 wei;
         manager = msg.sender;
+    }
+
+     function setTargetAndDeadline(uint256 _target, uint256 _deadline) public onlyManager {
+        target = _target;
+        deadline = block.timestamp + _deadline;
     }
 
     function sendEth() public payable {
@@ -90,4 +95,30 @@ contract CrowdFunding {
         thisRequest.recipient.transfer(thisRequest.value);
         thisRequest.completed=true;
     }
+function getTotalRequests() public view returns (uint256) {
+    return numRequest;
+}
+function getRequestDetails(uint256 _requestNo)
+    public
+    view
+    returns (
+        string memory description,
+        address recipient,
+        uint256 value,
+        bool completed,
+        uint256 noOfVoters
+    )
+{
+    Request storage thisRequest = requests[_requestNo];
+    return (
+        thisRequest.description,
+        thisRequest.recipient,
+        thisRequest.value,
+        thisRequest.completed,
+        thisRequest.noOfVoters
+    );
+}
+
+
+
 }
