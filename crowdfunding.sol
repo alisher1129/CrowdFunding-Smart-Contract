@@ -12,7 +12,7 @@ contract CrowdFunding {
 
     struct Request {
         string description;
-        address payable recipient;                           
+        address payable recipient;
         uint256 value;
         bool completed;
         uint256 noOfVoters;
@@ -28,22 +28,24 @@ contract CrowdFunding {
         manager = msg.sender;
     }
 
-     function setTargetAndDeadline(uint256 _target, uint256 _deadline) public onlyManager {
+    function setTargetAndDeadline(uint256 _target, uint256 _deadline)
+        public
+        onlyManager
+    {
         target = _target;
         deadline = block.timestamp + _deadline;
     }
 
-    function sendEth() public payable {
+    function sendEth(uint256 _amount) public payable {
         require(block.timestamp < deadline, "Deadline has passed");
         require(
-            msg.value >= minimumContribution,
+            _amount >= minimumContribution,
             " Minimum Contribution is not met"
         );
         if (contributors[msg.sender] == 0) {
             noOfContributors++;
         }
-        contributors[msg.sender] = contributors[msg.sender] + msg.value;
-        raiseAmount = raiseAmount + msg.value;
+        contributors[msg.sender] = contributors[msg.sender] + _amount;
     }
 
     function getContractBalance() public view returns (uint256) {
@@ -80,45 +82,54 @@ contract CrowdFunding {
         newRequest.noOfVoters = 0;
     }
 
-    function voteRequest(uint _requestNo) public  {
+    function voteRequest(uint256 _requestNo) public {
         require(contributors[msg.sender] > 0, "you must be contributor");
-        Request storage thisRequest=requests[_requestNo];
-        require(thisRequest.voters[msg.sender]==false , "You have already voted");
-        thisRequest.voters[msg.sender]=true;
+        Request storage thisRequest = requests[_requestNo];
+        require(
+            thisRequest.voters[msg.sender] == false,
+            "You have already voted"
+        );
+        thisRequest.voters[msg.sender] = true;
         thisRequest.noOfVoters++;
     }
-    function makePayment(uint _requestNo)public  onlyManager{
+
+    function makePayment(uint256 _requestNo) public onlyManager {
         require(raiseAmount >= target);
-        Request storage thisRequest=requests[_requestNo];
-        require(thisRequest.completed==false,"The request has been completed");
-        require(thisRequest.noOfVoters>noOfContributors/2, "Majority does not support");
+        Request storage thisRequest = requests[_requestNo];
+        require(
+            thisRequest.completed == false,
+            "The request has been completed"
+        );
+        require(
+            thisRequest.noOfVoters > noOfContributors / 2,
+            "Majority does not support"
+        );
         thisRequest.recipient.transfer(thisRequest.value);
-        thisRequest.completed=true;
+        thisRequest.completed = true;
     }
-function getTotalRequests() public view returns (uint256) {
-    return numRequest;
-}
-function getRequestDetails(uint256 _requestNo)
-    public
-    view
-    returns (
-        string memory description,
-        address recipient,
-        uint256 value,
-        bool completed,
-        uint256 noOfVoters
-    )
-{
-    Request storage thisRequest = requests[_requestNo];
-    return (
-        thisRequest.description,
-        thisRequest.recipient,
-        thisRequest.value,
-        thisRequest.completed,
-        thisRequest.noOfVoters
-    );
-}
 
+    function getTotalRequests() public view returns (uint256) {
+        return numRequest;
+    }
 
-
+    function getRequestDetails(uint256 _requestNo)
+        public
+        view
+        returns (
+            string memory description,
+            address recipient,
+            uint256 value,
+            bool completed,
+            uint256 noOfVoters
+        )
+    {
+        Request storage thisRequest = requests[_requestNo];
+        return (
+            thisRequest.description,
+            thisRequest.recipient,
+            thisRequest.value,
+            thisRequest.completed,
+            thisRequest.noOfVoters
+        );
+    }
 }
