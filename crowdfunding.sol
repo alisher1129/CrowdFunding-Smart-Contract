@@ -21,6 +21,15 @@ contract CrowdFunding {
     mapping(uint256 => Request) public requests;
     uint256 public numRequest;
 
+    //Mutex for Re-entrancy
+    bool private locked;
+    modifier nonReentrant() {
+        require(!locked, "No re-entrancy Wait Please !");
+        locked = true;
+        _;
+        locked = false;
+    }
+
     constructor(uint256 _target, uint256 _deadline) {
         target = _target;
         deadline = block.timestamp + _deadline;
@@ -46,21 +55,24 @@ contract CrowdFunding {
             noOfContributors++;
         }
         contributors[msg.sender] = contributors[msg.sender] + _amount;
+        raiseAmount += _amount; // Update raiseAmount
     }
 
     function getContractBalance() public view returns (uint256) {
         return address(this).balance;
     }
 
-    function refund() public {
+    function refund() public nonReentrant {
         require(
             block.timestamp > deadline && raiseAmount < target,
             "You are not eligible for refund "
         );
         require(contributors[msg.sender] > 0);
-        address payable user = payable(msg.sender);
-        user.transfer(contributors[msg.sender]);
-        contributors[msg.sender] = 0;
+        uint256 refundAmount = contributors[msg.sender];
+        contributors[msg.sender] = 0; // Reset contributor's contribution
+        raiseAmount -= refundAmount; // Decrease raiseAmount by refunded amount
+
+        payable(msg.sender).transfer(refundAmount); // Transfer refund amount to user
     }
 
     modifier onlyManager() {
