@@ -67,7 +67,7 @@ contract CrowdFunding {
             "You are not eligible for refund "
         );
         require(contributors[msg.sender] > 0);
-            address payable user = payable(msg.sender);
+        address payable user = payable(msg.sender);
         user.transfer(contributors[msg.sender]);
         contributors[msg.sender] = 0;
     }
@@ -139,6 +139,50 @@ contract CrowdFunding {
             thisRequest.value,
             thisRequest.completed,
             thisRequest.noOfVoters
+        );
+    }
+
+    function getAllRequests()
+        public
+        view
+        returns (
+            uint256 totalRequests,
+            uint256[] memory requestIds,
+            string[] memory descriptions,
+            address[] memory recipients,
+            uint256[] memory values,
+            bool[] memory completeds,
+            uint256[] memory noOfVotersList
+        )
+    {
+        totalRequests = numRequest;
+        requestIds = new uint256[](numRequest);
+        descriptions = new string[](numRequest);
+        recipients = new address[](numRequest);
+        values = new uint256[](numRequest);
+        completeds = new bool[](numRequest);
+        noOfVotersList = new uint256[](numRequest);
+
+        for (uint256 i = 0; i < numRequest; i++) {
+            Request storage thisRequest = requests[i];
+            requestIds[i] = i; // Store the request number
+            descriptions[i] = thisRequest.description;
+            recipients[i] = thisRequest.recipient;
+            values[i] = thisRequest.value;
+            completeds[i] = thisRequest.completed;
+            noOfVotersList[i] = thisRequest.noOfVoters;
+        }
+
+
+
+        return (
+            totalRequests,
+            requestIds,
+            descriptions,
+            recipients,
+            values,
+            completeds,
+            noOfVotersList
         );
     }
 }
