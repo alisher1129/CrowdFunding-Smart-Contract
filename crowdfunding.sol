@@ -55,7 +55,6 @@ contract CrowdFunding {
             noOfContributors++;
         }
         contributors[msg.sender] = contributors[msg.sender] + _amount;
-        raiseAmount += _amount; // Update raiseAmount
     }
 
     function getContractBalance() public view returns (uint256) {
@@ -68,11 +67,9 @@ contract CrowdFunding {
             "You are not eligible for refund "
         );
         require(contributors[msg.sender] > 0);
-        uint256 refundAmount = contributors[msg.sender];
-        contributors[msg.sender] = 0; // Reset contributor's contribution
-        raiseAmount -= refundAmount; // Decrease raiseAmount by refunded amount
-
-        payable(msg.sender).transfer(refundAmount); // Transfer refund amount to user
+            address payable user = payable(msg.sender);
+        user.transfer(contributors[msg.sender]);
+        contributors[msg.sender] = 0;
     }
 
     modifier onlyManager() {
