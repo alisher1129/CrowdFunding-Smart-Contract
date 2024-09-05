@@ -48,7 +48,7 @@ contract CrowdFunding {
         voteLocked = false;
     }
 
- bool private createRequestLocked;
+    bool private createRequestLocked;
 
     modifier nonReentrantCreateRequest() {
         require(!createRequestLocked, "No re-entrancy in voteRequest!");
@@ -57,7 +57,7 @@ contract CrowdFunding {
         createRequestLocked = false;
     }
 
-bool private makePaymentLocked;
+    bool private makePaymentLocked;
 
     modifier nonReentrantMakePaymentLocked() {
         require(!makePaymentLocked, "No re-entrancy in voteRequest!");
@@ -65,7 +65,6 @@ bool private makePaymentLocked;
         _;
         makePaymentLocked = false;
     }
-
 
     constructor(uint256 _target, uint256 _deadline) {
         target = _target;
@@ -82,7 +81,7 @@ bool private makePaymentLocked;
         deadline = block.timestamp + _deadline;
     }
 
-    function sendEth(uint256 _amount) public nonReentrantSendEth payable  {
+    function sendEth(uint256 _amount) public payable nonReentrantSendEth {
         require(block.timestamp < deadline, "Deadline has passed");
         require(
             _amount >= minimumContribution,
@@ -93,7 +92,6 @@ bool private makePaymentLocked;
         }
         contributors[msg.sender] = contributors[msg.sender] + _amount;
         raiseAmount += _amount;
-
     }
 
     function getContractBalance() public view returns (uint256) {
@@ -130,19 +128,26 @@ bool private makePaymentLocked;
         newRequest.noOfVoters = 0;
     }
 
-    function voteRequest(uint256 _requestNo) public nonReentrantVote{
+    function voteRequest(uint256 _requestNo) public nonReentrantVote {
         require(contributors[msg.sender] > 0, "you must be contributor");
-        Request storage thisRequest = requests[_requestNo];
         require(
-            thisRequest.voters[msg.sender] == false,
-            "You have already voted"
+            !hasVoted(_requestNo, msg.sender),
+            "You have already voted for this request"
         );
+        Request storage thisRequest = requests[_requestNo];
+
+        // Mark the user as having voted
         thisRequest.voters[msg.sender] = true;
         thisRequest.noOfVoters++;
-        thisRequest.voterList.push(msg.sender); // Add the voter's address to the list
+        // Add the user's address to the voterList
+        thisRequest.voterList.push(msg.sender);
     }
 
-    function makePayment(uint256 _requestNo) public nonReentrantMakePaymentLocked onlyManager {
+    function makePayment(uint256 _requestNo)
+        public
+        nonReentrantMakePaymentLocked
+        onlyManager
+    {
         require(raiseAmount >= target);
         Request storage thisRequest = requests[_requestNo];
         require(
@@ -230,5 +235,15 @@ bool private makePaymentLocked;
         returns (address[] memory)
     {
         return requests[_requestNo].voterList;
+    }
+
+    function hasVoted(uint256 _requestNo, address _user)
+        public
+        view
+        returns (bool)
+    {
+        Request storage thisRequest = requests[_requestNo];
+        // Return true if the user has voted, otherwise return false
+        return thisRequest.voters[_user];
     }
 }
