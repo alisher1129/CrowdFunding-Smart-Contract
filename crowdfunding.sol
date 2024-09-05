@@ -17,6 +17,8 @@ contract CrowdFunding {
         bool completed;
         uint256 noOfVoters;
         mapping(address => bool) voters;
+            address[] voterList; // New array to store the list of voters
+
     }
     mapping(uint256 => Request) public requests;
     uint256 public numRequest;
@@ -100,6 +102,8 @@ contract CrowdFunding {
         );
         thisRequest.voters[msg.sender] = true;
         thisRequest.noOfVoters++;
+            thisRequest.voterList.push(msg.sender); // Add the voter's address to the list
+
     }
 
     function makePayment(uint256 _requestNo) public onlyManager {
@@ -185,4 +189,7 @@ contract CrowdFunding {
             noOfVotersList
         );
     }
+    function getVoters(uint256 _requestNo) public view returns (address[] memory) {
+    return requests[_requestNo].voterList;
+}
 }
