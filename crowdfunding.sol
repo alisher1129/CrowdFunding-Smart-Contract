@@ -17,8 +17,7 @@ contract CrowdFunding {
         bool completed;
         uint256 noOfVoters;
         mapping(address => bool) voters;
-            address[] voterList; // New array to store the list of voters
-
+        address[] voterList; // New array to store the list of voters
     }
     mapping(uint256 => Request) public requests;
     uint256 public numRequest;
@@ -31,6 +30,42 @@ contract CrowdFunding {
         _;
         locked = false;
     }
+
+    bool private sendEthLocked;
+
+    modifier nonReentrantSendEth() {
+        require(!sendEthLocked, "No re-entrancy in sendEth!");
+        sendEthLocked = true;
+        _;
+        sendEthLocked = false;
+    }
+    bool private voteLocked;
+
+    modifier nonReentrantVote() {
+        require(!voteLocked, "No re-entrancy in voteRequest!");
+        voteLocked = true;
+        _;
+        voteLocked = false;
+    }
+
+ bool private createRequestLocked;
+
+    modifier nonReentrantCreateRequest() {
+        require(!createRequestLocked, "No re-entrancy in voteRequest!");
+        createRequestLocked = true;
+        _;
+        createRequestLocked = false;
+    }
+
+bool private makePaymentLocked;
+
+    modifier nonReentrantMakePaymentLocked() {
+        require(!makePaymentLocked, "No re-entrancy in voteRequest!");
+        makePaymentLocked = true;
+        _;
+        makePaymentLocked = false;
+    }
+
 
     constructor(uint256 _target, uint256 _deadline) {
         target = _target;
@@ -47,7 +82,7 @@ contract CrowdFunding {
         deadline = block.timestamp + _deadline;
     }
 
-    function sendEth(uint256 _amount) public payable {
+    function sendEth(uint256 _amount) public nonReentrantSendEth payable  {
         require(block.timestamp < deadline, "Deadline has passed");
         require(
             _amount >= minimumContribution,
@@ -57,6 +92,8 @@ contract CrowdFunding {
             noOfContributors++;
         }
         contributors[msg.sender] = contributors[msg.sender] + _amount;
+        raiseAmount += _amount;
+
     }
 
     function getContractBalance() public view returns (uint256) {
@@ -83,7 +120,7 @@ contract CrowdFunding {
         string memory _description,
         address payable _recipient,
         uint256 _value
-    ) public onlyManager {
+    ) public nonReentrantCreateRequest onlyManager {
         Request storage newRequest = requests[numRequest];
         numRequest++;
         newRequest.description = _description;
@@ -93,7 +130,7 @@ contract CrowdFunding {
         newRequest.noOfVoters = 0;
     }
 
-    function voteRequest(uint256 _requestNo) public {
+    function voteRequest(uint256 _requestNo) public nonReentrantVote{
         require(contributors[msg.sender] > 0, "you must be contributor");
         Request storage thisRequest = requests[_requestNo];
         require(
@@ -102,11 +139,10 @@ contract CrowdFunding {
         );
         thisRequest.voters[msg.sender] = true;
         thisRequest.noOfVoters++;
-            thisRequest.voterList.push(msg.sender); // Add the voter's address to the list
-
+        thisRequest.voterList.push(msg.sender); // Add the voter's address to the list
     }
 
-    function makePayment(uint256 _requestNo) public onlyManager {
+    function makePayment(uint256 _requestNo) public nonReentrantMakePaymentLocked onlyManager {
         require(raiseAmount >= target);
         Request storage thisRequest = requests[_requestNo];
         require(
@@ -177,8 +213,6 @@ contract CrowdFunding {
             noOfVotersList[i] = thisRequest.noOfVoters;
         }
 
-
-
         return (
             totalRequests,
             requestIds,
@@ -189,7 +223,12 @@ contract CrowdFunding {
             noOfVotersList
         );
     }
-    function getVoters(uint256 _requestNo) public view returns (address[] memory) {
-    return requests[_requestNo].voterList;
-}
+
+    function getVoters(uint256 _requestNo)
+        public
+        view
+        returns (address[] memory)
+    {
+        return requests[_requestNo].voterList;
+    }
 }
